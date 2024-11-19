@@ -302,7 +302,7 @@ const Calculator = () => {
                             <p className="text-sm text-gray-600">
                                 The cumulative amount spent on rent over time, including annual rent increases.
                                 This includes all monthly rent payments from the start date, adjusted by your specified
-                                annual rent increase rate. This is money that you won't get back.
+                                annual rent increase rate. This is money that you won&apos;t get back.
                             </p>
                         </div>
 
