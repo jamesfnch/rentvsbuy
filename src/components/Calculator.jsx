@@ -10,6 +10,7 @@ const Calculator = () => {
         propertyPrice: 300000,
         deposit: 30000,
         mortgageRate: 4.5,
+        mortgageLength: 25, // New parameter for mortgage length
         propertyAppreciationRate: 3,
         monthlyRent: 1200,
         rentIncreaseRate: 3,
@@ -37,7 +38,7 @@ const Calculator = () => {
         const monthlyMortgage = calculateMortgagePayment(
             loanAmount,
             inputs.mortgageRate,
-            inputs.timeframe
+            inputs.mortgageLength // Use mortgage length instead of timeframe
         );
 
         let totalBuyingCost = inputs.deposit;
@@ -45,13 +46,32 @@ const Calculator = () => {
         let currentRent = inputs.monthlyRent;
         let propertyValue = inputs.propertyPrice;
         let monthlyRoomIncome = inputs.numBedrooms > 1 ? inputs.roomRentalIncome : 0;
+        let remainingMortgage = loanAmount;
+        let totalInterestPaid = 0;
+        let totalPrincipalPaid = 0;
 
         for (let year = 0; year <= inputs.timeframe; year++) {
             // Buying costs
-            const yearlyMortgage = monthlyMortgage * 12;
             const yearlyMaintenance = inputs.maintenanceCosts * 12;
             const yearlyCouncilTax = inputs.councilTax * 12;
             const yearlyRoomIncome = monthlyRoomIncome * 12;
+
+            // Calculate mortgage payments only if still within mortgage term
+            let yearlyMortgage = 0;
+            let yearlyInterest = 0;
+            let yearlyPrincipal = 0;
+
+            if (year < inputs.mortgageLength) {
+                yearlyMortgage = monthlyMortgage * 12;
+                // Calculate interest portion of the payment
+                yearlyInterest = remainingMortgage * (inputs.mortgageRate / 100);
+                // Principal is the total payment minus the interest
+                yearlyPrincipal = yearlyMortgage - yearlyInterest;
+
+                totalInterestPaid += yearlyInterest;
+                totalPrincipalPaid += yearlyPrincipal;
+                remainingMortgage = Math.max(0, remainingMortgage - yearlyPrincipal);
+            }
 
             totalBuyingCost += yearlyMortgage + yearlyMaintenance + yearlyCouncilTax - yearlyRoomIncome;
             propertyValue *= (1 + inputs.propertyAppreciationRate / 100);
@@ -70,6 +90,10 @@ const Calculator = () => {
                 rentingCost: Math.round(totalRentingCost),
                 netBuyingPosition: Math.round(netBuyingPosition),
                 propertyValue: Math.round(propertyValue),
+                remainingMortgage: Math.round(remainingMortgage),
+                totalInterestPaid: Math.round(totalInterestPaid),
+                yearlyInterestPaid: Math.round(yearlyInterest),
+                yearlyPrincipalPaid: Math.round(yearlyPrincipal),
             });
         }
         return data;
@@ -78,7 +102,11 @@ const Calculator = () => {
     const handleInputChange = (name, value) => {
         setInputs(prev => ({
             ...prev,
-            [name]: Number(value)
+            [name]: Number(value),
+            // Ensure mortgage length doesn't exceed timeframe
+            ...(name === 'timeframe' && prev.mortgageLength > value
+                ? { mortgageLength: value }
+                : {}),
         }));
     };
 
@@ -121,6 +149,21 @@ const Calculator = () => {
                                         className="flex-1"
                                     />
                                     <span className="w-12 text-right">{inputs.mortgageRate}%</span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Mortgage Length (Years)</label>
+                                <div className="flex items-center space-x-4">
+                                    <Slider
+                                        value={[inputs.mortgageLength]}
+                                        onValueChange={([value]) => handleInputChange('mortgageLength', value)}
+                                        max={Math.min(35, inputs.timeframe)}
+                                        min={5}
+                                        step={1}
+                                        className="flex-1"
+                                    />
+                                    <span className="w-12 text-right">{inputs.mortgageLength}</span>
                                 </div>
                             </div>
 
@@ -285,6 +328,13 @@ const Calculator = () => {
                                     dataKey="propertyValue"
                                     name="Property Value"
                                     stroke="#ffc658"
+                                    strokeWidth={2}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="remainingMortgage"
+                                    name="Remaining Mortgage"
+                                    stroke="#ff7f7f"
                                     strokeWidth={2}
                                 />
                             </LineChart>
