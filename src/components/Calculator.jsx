@@ -397,19 +397,34 @@ const Calculator = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                             <h3 className="font-semibold mb-2">After {inputs.timeframe} years:</h3>
-                            <p>Total Renting Cost: £{new Intl.NumberFormat().format(comparisonData[comparisonData.length - 1].rentingCost)}</p>
-                            <p>Total Buying Cost: £{new Intl.NumberFormat().format(comparisonData[comparisonData.length - 1].buyingCost)}</p>
-                            <p>Property Value: £{new Intl.NumberFormat().format(comparisonData[comparisonData.length - 1].propertyValue)}</p>
+                            <p>Total Renting Cost: £{new Intl.NumberFormat().format(comparisonData[inputs.timeframe].rentingCost)}</p>
+                            <p>Total Buying Cost: £{new Intl.NumberFormat().format(comparisonData[inputs.timeframe].buyingCost)}</p>
+                            <p>Property Value: £{new Intl.NumberFormat().format(comparisonData[inputs.timeframe].propertyValue)}</p>
+                            <p>Remaining Mortgage: £{new Intl.NumberFormat().format(comparisonData[inputs.timeframe].remainingMortgage)}</p>
+                            {inputs.timeframe < inputs.mortgageLength && (
+                                <p className="text-sm text-yellow-600 mt-2">
+                                    Note: {inputs.mortgageLength - inputs.timeframe} years remaining on mortgage term
+                                </p>
+                            )}
                         </div>
                         <div>
                             <h3 className="font-semibold mb-2">Monthly Costs (Initial):</h3>
-                            <p>Monthly Mortgage: £{new Intl.NumberFormat().format(Math.round(calculateMortgagePayment(inputs.propertyPrice - inputs.deposit, inputs.mortgageRate, inputs.timeframe)))}</p>
+                            <p>Monthly Mortgage: £{new Intl.NumberFormat().format(Math.round(calculateMortgagePayment(inputs.propertyPrice - inputs.deposit, inputs.mortgageRate, inputs.mortgageLength)))}</p>
                             <p>Monthly Rent: £{new Intl.NumberFormat().format(inputs.monthlyRent)}</p>
+                            <p className="mt-2">Monthly Costs Year {inputs.timeframe}:</p>
+                            <p>Monthly Rent: £{new Intl.NumberFormat().format(Math.round(inputs.monthlyRent * Math.pow(1 + inputs.rentIncreaseRate / 100, inputs.timeframe)))}</p>
                         </div>
                         <div>
                             <h3 className="font-semibold mb-2">Property Details:</h3>
                             <p>Loan Amount: £{new Intl.NumberFormat().format(inputs.propertyPrice - inputs.deposit)}</p>
                             <p>Loan to Value: {((1 - inputs.deposit / inputs.propertyPrice) * 100).toFixed(1)}%</p>
+                            <p>Total Interest Paid: £{new Intl.NumberFormat().format(comparisonData[inputs.timeframe].totalInterestPaid)}</p>
+                            {inputs.timeframe < inputs.mortgageLength && (
+                                <p className="text-sm text-blue-600 mt-2">
+                                    Projected total interest over full {inputs.mortgageLength} year term:
+                                    £{new Intl.NumberFormat().format(Math.round(calculateMortgagePayment(inputs.propertyPrice - inputs.deposit, inputs.mortgageRate, inputs.mortgageLength) * 12 * inputs.mortgageLength - (inputs.propertyPrice - inputs.deposit)))}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </CardContent>
