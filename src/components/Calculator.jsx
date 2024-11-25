@@ -102,11 +102,7 @@ const Calculator = () => {
     const handleInputChange = (name, value) => {
         setInputs(prev => ({
             ...prev,
-            [name]: Number(value),
-            // Ensure mortgage length doesn't exceed timeframe
-            ...(name === 'timeframe' && prev.mortgageLength > value
-                ? { mortgageLength: value }
-                : {}),
+            [name]: Number(value)
         }));
     };
 
@@ -158,7 +154,7 @@ const Calculator = () => {
                                     <Slider
                                         value={[inputs.mortgageLength]}
                                         onValueChange={([value]) => handleInputChange('mortgageLength', value)}
-                                        max={Math.min(35, inputs.timeframe)}
+                                        max={35}
                                         min={5}
                                         step={1}
                                         className="flex-1"
@@ -259,18 +255,24 @@ const Calculator = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Timeframe (Years)</label>
+                                <label className="text-sm font-medium">Analysis Timeframe (Years)</label>
                                 <div className="flex items-center space-x-4">
                                     <Slider
                                         value={[inputs.timeframe]}
                                         onValueChange={([value]) => handleInputChange('timeframe', value)}
-                                        min={5}
+                                        min={1}
                                         max={35}
                                         step={1}
                                         className="flex-1"
                                     />
                                     <span className="w-12 text-right">{inputs.timeframe}</span>
                                 </div>
+                                {inputs.timeframe < inputs.mortgageLength && (
+                                    <p className="text-sm text-yellow-600">
+                                        Note: Showing first {inputs.timeframe} years of a {inputs.mortgageLength}-year
+                                        mortgage
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -284,9 +286,9 @@ const Calculator = () => {
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart
                                 data={comparisonData}
-                                margin={{ top: 20, right: 30, left: 60, bottom: 50 }}
+                                margin={{top: 20, right: 30, left: 60, bottom: 50}}
                             >
-                                <CartesianGrid strokeDasharray="3 3" />
+                                <CartesianGrid strokeDasharray="3 3"/>
                                 <XAxis
                                     dataKey="year"
                                     label={{ value: 'Years', position: 'insideBottom', offset: -25 }}
