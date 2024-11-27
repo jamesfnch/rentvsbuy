@@ -38,7 +38,7 @@ const Calculator = () => {
         const monthlyMortgage = calculateMortgagePayment(
             loanAmount,
             inputs.mortgageRate,
-            inputs.mortgageLength // Use mortgage length instead of timeframe
+            inputs.mortgageLength
         );
 
         let totalBuyingCost = inputs.deposit;
@@ -47,8 +47,10 @@ const Calculator = () => {
         let propertyValue = inputs.propertyPrice;
         let monthlyRoomIncome = inputs.numBedrooms > 1 ? inputs.roomRentalIncome : 0;
         let remainingMortgage = loanAmount;
-        let totalInterestPaid = 0;
-        let totalPrincipalPaid = 0;
+
+        // Reset these variables to track cumulative values
+        let cumulativeInterest = 0;
+        let cumulativePrincipal = 0;
 
         for (let year = 0; year <= inputs.timeframe; year++) {
             // Buying costs
@@ -61,15 +63,15 @@ const Calculator = () => {
             let yearlyInterest = 0;
             let yearlyPrincipal = 0;
 
+
             if (year < inputs.mortgageLength) {
                 yearlyMortgage = monthlyMortgage * 12;
-                // Calculate interest portion of the payment
+                // Calculate interest based on remaining mortgage balance
                 yearlyInterest = remainingMortgage * (inputs.mortgageRate / 100);
-                // Principal is the total payment minus the interest
                 yearlyPrincipal = yearlyMortgage - yearlyInterest;
 
-                totalInterestPaid += yearlyInterest;
-                totalPrincipalPaid += yearlyPrincipal;
+                cumulativeInterest += yearlyInterest;
+                cumulativePrincipal += yearlyPrincipal;
                 remainingMortgage = Math.max(0, remainingMortgage - yearlyPrincipal);
             }
 
@@ -91,7 +93,7 @@ const Calculator = () => {
                 netBuyingPosition: Math.round(netBuyingPosition),
                 propertyValue: Math.round(propertyValue),
                 remainingMortgage: Math.round(remainingMortgage),
-                totalInterestPaid: Math.round(totalInterestPaid),
+                totalInterestPaid: Math.round(cumulativeInterest), // Use cumulative interest
                 yearlyInterestPaid: Math.round(yearlyInterest),
                 yearlyPrincipalPaid: Math.round(yearlyPrincipal),
             });
@@ -104,6 +106,16 @@ const Calculator = () => {
             ...prev,
             [name]: Number(value)
         }));
+    };
+
+    const calculateTotalInterest = (principal, annualRate, years) => {
+        const monthlyRate = annualRate / 100 / 12;
+        const numPayments = years * 12;
+        const monthlyPayment = (
+            (principal * monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
+            (Math.pow(1 + monthlyRate, numPayments) - 1)
+        );
+        return (monthlyPayment * numPayments) - principal;
     };
 
     return (
@@ -397,10 +409,14 @@ const Calculator = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                             <h3 className="font-semibold mb-2">After {inputs.timeframe} years:</h3>
-                            <p>Total Renting Cost: £{new Intl.NumberFormat().format(comparisonData[inputs.timeframe].rentingCost)}</p>
-                            <p>Total Buying Cost: £{new Intl.NumberFormat().format(comparisonData[inputs.timeframe].buyingCost)}</p>
-                            <p>Property Value: £{new Intl.NumberFormat().format(comparisonData[inputs.timeframe].propertyValue)}</p>
-                            <p>Remaining Mortgage: £{new Intl.NumberFormat().format(comparisonData[inputs.timeframe].remainingMortgage)}</p>
+                            <p>Total Renting Cost:
+                                £{new Intl.NumberFormat().format(comparisonData[inputs.timeframe].rentingCost)}</p>
+                            <p>Total Buying Cost:
+                                £{new Intl.NumberFormat().format(comparisonData[inputs.timeframe].buyingCost)}</p>
+                            <p>Property Value:
+                                £{new Intl.NumberFormat().format(comparisonData[inputs.timeframe].propertyValue)}</p>
+                            <p>Remaining Mortgage:
+                                £{new Intl.NumberFormat().format(comparisonData[inputs.timeframe].remainingMortgage)}</p>
                             {inputs.timeframe < inputs.mortgageLength && (
                                 <p className="text-sm text-yellow-600 mt-2">
                                     Note: {inputs.mortgageLength - inputs.timeframe} years remaining on mortgage term
@@ -409,20 +425,27 @@ const Calculator = () => {
                         </div>
                         <div>
                             <h3 className="font-semibold mb-2">Monthly Costs (Initial):</h3>
-                            <p>Monthly Mortgage: £{new Intl.NumberFormat().format(Math.round(calculateMortgagePayment(inputs.propertyPrice - inputs.deposit, inputs.mortgageRate, inputs.mortgageLength)))}</p>
+                            <p>Monthly Mortgage:
+                                £{new Intl.NumberFormat().format(Math.round(calculateMortgagePayment(inputs.propertyPrice - inputs.deposit, inputs.mortgageRate, inputs.mortgageLength)))}</p>
                             <p>Monthly Rent: £{new Intl.NumberFormat().format(inputs.monthlyRent)}</p>
                             <p className="mt-2">Monthly Costs Year {inputs.timeframe}:</p>
-                            <p>Monthly Rent: £{new Intl.NumberFormat().format(Math.round(inputs.monthlyRent * Math.pow(1 + inputs.rentIncreaseRate / 100, inputs.timeframe)))}</p>
+                            <p>Monthly Rent:
+                                £{new Intl.NumberFormat().format(Math.round(inputs.monthlyRent * Math.pow(1 + inputs.rentIncreaseRate / 100, inputs.timeframe)))}</p>
                         </div>
                         <div>
                             <h3 className="font-semibold mb-2">Property Details:</h3>
                             <p>Loan Amount: £{new Intl.NumberFormat().format(inputs.propertyPrice - inputs.deposit)}</p>
                             <p>Loan to Value: {((1 - inputs.deposit / inputs.propertyPrice) * 100).toFixed(1)}%</p>
-                            <p>Total Interest Paid: £{new Intl.NumberFormat().format(comparisonData[inputs.timeframe].totalInterestPaid)}</p>
+                            <p>Total Interest Paid:
+                                £{new Intl.NumberFormat().format(comparisonData[inputs.timeframe].totalInterestPaid)}</p>
                             {inputs.timeframe < inputs.mortgageLength && (
                                 <p className="text-sm text-blue-600 mt-2">
                                     Projected total interest over full {inputs.mortgageLength} year term:
-                                    £{new Intl.NumberFormat().format(Math.round(calculateMortgagePayment(inputs.propertyPrice - inputs.deposit, inputs.mortgageRate, inputs.mortgageLength) * 12 * inputs.mortgageLength - (inputs.propertyPrice - inputs.deposit)))}
+                                    £{new Intl.NumberFormat().format(Math.round(calculateTotalInterest(
+                                    inputs.propertyPrice - inputs.deposit,
+                                    inputs.mortgageRate,
+                                    inputs.mortgageLength
+                                )))}
                                 </p>
                             )}
                         </div>
