@@ -403,9 +403,9 @@ const Calculator = () => {
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-chart-6">
                 <CardContent className="p-6">
-                    <h2 className="text-2xl font-bold mb-4">Summary</h2>
+                    <h2 className="text-2xl font-bold mb-4 text-white">Summary</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                             <h3 className="font-semibold mb-2">After {inputs.timeframe} years:</h3>
